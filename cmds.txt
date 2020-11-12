@@ -1,0 +1,9 @@
+python -u train.py data -a bgt1 --setting 5 --optimizer adam --lr 0.0005 \
+-s en -t fr --label-smoothing 0.1 --dropout 0.3 --max-tokens 1000 --min-lr \
+'1e-09' --lr-scheduler inverse_sqrt --weight-decay 0.0001 --criterion bgt_loss \
+--max-epoch 20 --warmup-updates 4000 --warmup-init-lr '1e-07' --adam-betas '(0.9, 0.98)' \
+--save-dir checkpoints/bgt --distributed-world-size 1 --latent-size 1024 --update-freq 50 \
+--task bgt --save-interval-updates 0 --freeze 0 \
+--sentencepiece training/fr/fr-en.1m.tok.all.sp.20k.model --x0 65536 --translation-loss 1.0 \
+--sentence-avg --num-workers 0 --consistent 0 --translation-type sample --reconstruction-loss 0.5
+

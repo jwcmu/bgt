@@ -125,3 +125,4 @@ data-bin/
 /fairseq/data/token_block_utils_fast.cpp
 
 STS
+data
