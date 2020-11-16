@@ -393,7 +393,7 @@ class TransformerEncoder(FairseqEncoder):
 
         #sample z
         z = None
-        if self.do_vae and not generate:
+        if self.bgt_setting == "bgt" and not generate:
             z = torch.randn([x.size()[1], self.args.latent_size])
 
         sent_emb, mean, logv = self.get_sentence_embs(x, encoder_padding_mask, z)

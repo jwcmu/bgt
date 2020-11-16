@@ -55,10 +55,7 @@ class BiLingualLabelSmoothedCrossEntropyCriterion(FairseqCriterion):
         """
         assert self.args.sentence_avg
 
-        net_output = model(sample['en_net_input']['src_tokens'], sample['en_net_input']['src_lengths'],
-                           sample['en_net_input']['prev_output_tokens'], sample['fr_net_input']['src_tokens'],
-                           sample['fr_net_input']['src_lengths'],
-                           sample['fr_net_input']['prev_output_tokens'])
+        net_output = model(sample)
 
         en_target = sample['en_target'].view(-1, 1)
         fr_target = sample['fr_target'].view(-1, 1)
