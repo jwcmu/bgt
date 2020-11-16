@@ -51,10 +51,13 @@ class BGTModel(BaseFairseqModel):
         :prog:
     """
 
-    def __init__(self,  args, encoder_sem=None, decoder_fr=None, decoder_en=None,
-                 decoder_trans_en=None, decoder_trans_fr=None, src_dict=None, tgt_dict=None):
+    def __init__(self,  args, encoder_sem=None, encoder_en=None, encoder_fr=None,
+                 decoder_fr=None, decoder_en=None, decoder_trans_en=None, decoder_trans_fr=None,
+                 src_dict=None, tgt_dict=None):
         super().__init__()
         self.args = args
+        self.bgt_setting = self.args.bgt_setting
+
         self.encoder_sem = encoder_sem
         self.encoder_en = encoder_en
         self.encoder_fr = encoder_fr
@@ -67,7 +70,6 @@ class BGTModel(BaseFairseqModel):
 
         self.epoch_iter = None
 
-        self.do_vae = args.setting == "bgt"
         self.num_updates = 0
         self.counter = 0
 
@@ -82,10 +84,10 @@ class BGTModel(BaseFairseqModel):
         else:
             mx = self.encoder_sem_fr.max_positions()
 
-        if self.decoder_fr is not None:
-            return (mx, self.decoder_fr.max_positions())
-        else:
+        if self.decoder_en is not None:
             return (mx, self.decoder_en.max_positions())
+        else:
+            return (mx, self.decoder_trans_en.max_positions())
 
     @staticmethod
     def add_args(parser):
@@ -140,7 +142,7 @@ class BGTModel(BaseFairseqModel):
                                  'Must be used with adaptive_loss criterion'),
         parser.add_argument('--adaptive-softmax-dropout', type=float, metavar='D',
                             help='sets adaptive softmax dropout for the tail projections')
-        parser.add_argument('--bgt-setting', type=str, metavar='STR',
+        parser.add_argument('--bgt-setting', type=str, choices=["trans", "bgt"], metavar='STR',
                             help='which experiment to run, choices are: '
                             'trans - translation baseline'
                             'bgt - bgt model')
@@ -199,38 +201,30 @@ class BGTModel(BaseFairseqModel):
                 tgt_dict, args.decoder_embed_dim, args.decoder_embed_path
             )
 
-        if args.setting == "trans":
-            pass
-        elif args.setting == "bgt":
-            assert len(src_dict.symbols) == len(tgt_dict.symbols)
-            encoder_sem = cls.build_encoder(args, src_dict, encoder_embed_tokens)
-            decoder_fr = cls.build_decoder(args, tgt_dict, decoder_embed_tokens, trans=False)
-            decoder_trans_fr = None
-            decoder_trans_en = None
-            if args.share_duplicated_embeddings:
-                decoder_en = cls.build_decoder(args, src_dict, decoder_embed_tokens, trans=False)
-                if args.translation_type == "sample":
-                    decoder_trans_fr = cls.build_decoder(args, tgt_dict, decoder_embed_tokens, trans=True)
-                    decoder_trans_en = cls.build_decoder(args, src_dict, decoder_embed_tokens, trans=True)
-            else:
-                decoder_en = cls.build_decoder(args, src_dict, get_decoder_embed_tokens(), trans=False)
-                if args.translation_type == "sample":
-                    decoder_trans_fr = cls.build_decoder(args, tgt_dict, get_decoder_embed_tokens(), trans=True)
-                    decoder_trans_en = cls.build_decoder(args, src_dict, get_decoder_embed_tokens(), trans=True)
-            return BGTModel(args, encoder_sem=encoder_sem, decoder_fr=decoder_fr, decoder_en=decoder_en,
-                            decoder_trans_en=decoder_trans_en, decoder_trans_fr=decoder_trans_fr, src_dict=src_dict,
-                            tgt_dict=tgt_dict)
-        else:
-            raise ValueError(
-                '--bgt-setting must be either \'trans\' or \'bgt\'')
+        assert len(src_dict.symbols) == len(tgt_dict.symbols)
+        encoder_sem = cls.build_encoder(args, src_dict, encoder_embed_tokens)
+        encoder_en = cls.build_encoder(args, src_dict, encoder_embed_tokens)
+        encoder_fr = cls.build_encoder(args, tgt_dict, encoder_embed_tokens)
+        decoder_trans_fr = cls.build_decoder(args, tgt_dict, get_decoder_embed_tokens(), do_trans=True)
+        decoder_trans_en = cls.build_decoder(args, src_dict, get_decoder_embed_tokens(), do_trans=True)
+        decoder_fr = None
+        decoder_en = None
+
+        if args.bgt_setting == "bgt":
+            decoder_fr = cls.build_decoder(args, tgt_dict, decoder_embed_tokens, do_trans=False)
+            decoder_en = cls.build_decoder(args, src_dict, get_decoder_embed_tokens(), do_trans=False)
+
+        return BGTModel(args, encoder_sem=encoder_sem, encoder_en=encoder_en, encoder_fr=encoder_fr,
+                        decoder_fr=decoder_fr, decoder_en=decoder_en, decoder_trans_en=decoder_trans_en,
+                        decoder_trans_fr=decoder_trans_fr, src_dict=src_dict, tgt_dict=tgt_dict)
 
     @classmethod
     def build_encoder(cls, args, src_dict, embed_tokens):
         return TransformerEncoder(args, src_dict, embed_tokens)
 
     @classmethod
-    def build_decoder(cls, args, tgt_dict, embed_tokens, trans=True):
-        return TransformerDecoder(args, tgt_dict, embed_tokens, trans=trans)
+    def build_decoder(cls, args, tgt_dict, embed_tokens, do_trans=True):
+        return TransformerDecoder(args, tgt_dict, embed_tokens, do_trans=do_trans)
 
     def forward(self, sample):
 
@@ -242,46 +236,8 @@ class BGTModel(BaseFairseqModel):
         fr_src_lengths = sample['fr_net_input']['src_lengths (french)']
         fr_prev_output_tokens = sample['fr_net_input']['prev_output_tokens (english)']
 
-        en_src_tokens_sem = en_src_tokens
-        en_src_tokens_lang = en_src_tokens
-
-        fr_src_tokens_sem = fr_src_tokens
-        fr_src_tokens_lang = fr_src_tokens
-
-        if self.args.add_lang_tokens:
-            toks_to_add = en_src_tokens_sem.clone()[:,0] * 0 + self.src_dict.indices["__src__"]
-            en_src_tokens_sem = torch.cat((toks_to_add[:,None], en_src_tokens_sem), dim=1)
-
-            toks_to_add = en_src_tokens_lang.clone()[:,0] * 0 + self.src_dict.indices["__src__"]
-            en_src_tokens_lang = torch.cat((toks_to_add[:,None], en_src_tokens_lang), dim=1)
-            en_src_lengths = en_src_lengths + 1
-
-            toks_to_add = fr_src_tokens_sem.clone()[:,0] * 0 + self.src_dict.indices["__tgt__"]
-            fr_src_tokens_sem = torch.cat((toks_to_add[:,None], fr_src_tokens_sem), dim=1)
-
-            toks_to_add = fr_src_tokens_lang.clone()[:,0] * 0 + self.src_dict.indices["__tgt__"]
-            fr_src_tokens_lang = torch.cat((toks_to_add[:,None], fr_src_tokens_lang), dim=1)
-            fr_src_lengths = fr_src_lengths + 1
-
-        if self.args.add_encoder_tokens:
-            toks_to_add = en_src_tokens_sem.clone()[:,0] * 0 + self.src_dict.indices["__sem__"]
-            en_src_tokens_sem = torch.cat((toks_to_add[:,None], en_src_tokens_sem), dim=1)
-
-            toks_to_add = en_src_tokens_lang.clone()[:,0] * 0 + self.src_dict.indices["__lang__"]
-            en_src_tokens_lang = torch.cat((toks_to_add[:,None], en_src_tokens_lang), dim=1)
-            en_src_lengths = en_src_lengths + 1
-
-            toks_to_add = fr_src_tokens_sem.clone()[:,0] * 0 + self.src_dict.indices["__sem__"]
-            fr_src_tokens_sem = torch.cat((toks_to_add[:,None], fr_src_tokens_sem), dim=1)
-
-            toks_to_add = fr_src_tokens_lang.clone()[:,0] * 0 + self.src_dict.indices["__lang__"]
-            fr_src_tokens_lang = torch.cat((toks_to_add[:,None], fr_src_tokens_lang), dim=1)
-            fr_src_lengths = fr_src_lengths + 1
-
-        freeze = False
-
-        sem_encoder_out_en = self.encoder_sem(en_src_tokens_sem, en_src_lengths, freeze)
-        sem_encoder_out_fr = self.encoder_sem(fr_src_tokens_sem, fr_src_lengths, freeze)
+        sem_encoder_out_en = self.encoder_sem(en_src_tokens, en_src_lengths)
+        sem_encoder_out_fr = self.encoder_sem(fr_src_tokens, fr_src_lengths)
 
         if self.counter % 2 == 0:
             sem_encoder_out = sem_encoder_out_en
@@ -290,33 +246,21 @@ class BGTModel(BaseFairseqModel):
 
         self.counter += 1
 
-        en_encoder_out = self.encoder_sem(en_src_tokens_lang, en_src_lengths, freeze)
-        fr_encoder_out = self.encoder_sem(fr_src_tokens_lang, fr_src_lengths, freeze)
+        en_encoder_out = self.encoder_sem(en_src_tokens, en_src_lengths)
+        fr_encoder_out = self.encoder_sem(fr_src_tokens, fr_src_lengths)
 
         # get english decoder sentence embedding
-        en_z = torch.cat((en_encoder_out['sent_emb'], sem_encoder_out['sent_emb']), dim=1)
+        en_z = torch.cat((en_encoder_out['mean'], sem_encoder_out['mean']), dim=1)
         # get french decoder sentence embedding
-        fr_z = torch.cat((fr_encoder_out['sent_emb'], sem_encoder_out['sent_emb']), dim=1)
-
-        if self.args.use_mean:
-            # get english decoder sentence embedding
-            en_z = torch.cat((en_encoder_out['mean'], sem_encoder_out['mean']), dim=1)
-            # get french decoder sentence embedding
-            fr_z = torch.cat((fr_encoder_out['mean'], sem_encoder_out['mean']), dim=1)
+        fr_z = torch.cat((fr_encoder_out['mean'], sem_encoder_out['mean']), dim=1)
 
         # get total z, mean, logv
-        z = torch.cat((sem_encoder_out['z'], en_encoder_out['z'], fr_encoder_out['z']),
-                                dim=1)
-        logv = torch.cat((sem_encoder_out['logv'], en_encoder_out['logv'], fr_encoder_out['logv']),
-                                   dim=1)
-        lv_logv = torch.cat((en_encoder_out['logv'], fr_encoder_out['logv']),
-                                   dim=1)
+        z = torch.cat((sem_encoder_out['z'], en_encoder_out['z'], fr_encoder_out['z']), dim=1)
+        logv = torch.cat((sem_encoder_out['logv'], en_encoder_out['logv'], fr_encoder_out['logv']), dim=1)
+        lv_logv = torch.cat((en_encoder_out['logv'], fr_encoder_out['logv']), dim=1)
 
-        mean = torch.cat((sem_encoder_out['mean'], en_encoder_out['mean'], fr_encoder_out['mean']),
-                             dim=1)
-        lv_mean = torch.cat((en_encoder_out['mean'], fr_encoder_out['mean']),
-                             dim=1)
-
+        mean = torch.cat((sem_encoder_out['mean'], en_encoder_out['mean'], fr_encoder_out['mean']), dim=1)
+        lv_mean = torch.cat((en_encoder_out['mean'], fr_encoder_out['mean']), dim=1)
 
         en_decoder_out = self.decoder_en(fr_prev_output_tokens, {'sent_emb': en_z,
                                                                  'encoder_out': None, 'encoder_padding_mask': None})
@@ -379,6 +323,7 @@ class TransformerEncoder(FairseqEncoder):
         self.register_buffer('version', torch.Tensor([3]))
         self.args = args
         self.dropout = args.dropout
+        self.bgt_setting = self.args.bgt_setting
 
         embed_dim = embed_tokens.embedding_dim
         self.padding_idx = embed_tokens.padding_idx
@@ -404,13 +349,11 @@ class TransformerEncoder(FairseqEncoder):
 
         self.hidden2mean = nn.Linear(embed_dim, self.args.latent_size, bias=False)
 
-        self.do_vae = args.setting == 5
-
-        if self.do_vae:
+        if self.bgt_setting == "bgt":
             self.hidden2logv = nn.Linear(embed_dim, self.args.latent_size, bias=False)
             self.latent2hidden = nn.Linear(self.args.latent_size, embed_dim, bias=False)
 
-    def forward(self, src_tokens, src_lengths, freeze, generate=False):
+    def forward(self, src_tokens, src_lengths, generate=False):
         """
         Args:
             src_tokens (LongTensor): tokens in the source language of shape
@@ -451,15 +394,7 @@ class TransformerEncoder(FairseqEncoder):
         if self.do_vae and not generate:
             z = torch.randn([x.size()[1], self.args.latent_size])
 
-        sent_emb, mean, logv = self.get_sentence_and_vae_embs(x, encoder_padding_mask, z)
-
-        # detach encoder outputs
-        if freeze:
-            x = x.detach()
-            sent_emb = sent_emb.detach()
-            mean = mean.detach()
-            logv = logv.detach()
-            z = z.detach()
+        sent_emb, mean, logv = self.get_sentence_embs(x, encoder_padding_mask, z)
 
         return {
             'encoder_out': x,  # T x B x C
@@ -470,7 +405,7 @@ class TransformerEncoder(FairseqEncoder):
             'z': z,
         }
 
-    def get_sentence_and_vae_embs(self, encoder_out, encoder_padding_mask, z=None):
+    def get_sentence_embs(self, encoder_out, encoder_padding_mask, z=None):
 
         if not self.args.cpu:
             mean_pool = torch.where(
@@ -490,7 +425,7 @@ class TransformerEncoder(FairseqEncoder):
 
         mean = self.hidden2mean(mean_pool)
         logv = None
-        if self.do_vae:
+        if self.bgt_setting == "bgt":
             logv = self.hidden2logv(mean_pool)
             if z is not None:
                 std = torch.exp(0.5 * logv)
@@ -574,12 +509,12 @@ class TransformerDecoder(FairseqIncrementalDecoder):
             (default: False).
     """
 
-    def __init__(self, args, dictionary, embed_tokens, no_encoder_attn=False, trans=True):
+    def __init__(self, args, dictionary, embed_tokens, no_encoder_attn=False, do_trans=True):
         super().__init__(dictionary)
         self.register_buffer('version', torch.Tensor([3]))
 
         self.args = args
-        self.trans = trans
+        self.do_trans = do_trans
         self.dropout = args.dropout
         self.share_input_output_embed = args.share_decoder_input_output_embed
 
@@ -602,7 +537,7 @@ class TransformerDecoder(FairseqIncrementalDecoder):
 
         self.layers = nn.ModuleList([])
         self.layers.extend([
-            TransformerSentenceEmbeddingDecoderLayer(args, no_encoder_attn, trans=trans)
+            TransformerSentenceEmbeddingDecoderLayer(args, no_encoder_attn, do_trans=do_trans)
             for _ in range(args.decoder_layers)
         ])
 
@@ -623,21 +558,16 @@ class TransformerDecoder(FairseqIncrementalDecoder):
             )
         elif not self.share_input_output_embed:
             self.embed_out = nn.Parameter(torch.Tensor(len(dictionary), self.output_embed_dim))
-            if self.trans:
+            if self.do_trans:
                 self.embed_out = nn.Parameter(torch.Tensor(len(dictionary), embed_dim + self.args.latent_size))
             else:
-                if self.args.lv_dim > 0:
-                    self.embed_out = nn.Parameter(torch.Tensor(len(dictionary), self.args.latent_size * 2 + self.args.lv_dim))
-                else:
-                    self.embed_out = nn.Parameter(torch.Tensor(len(dictionary), self.args.latent_size * 2 + embed_dim))
+                self.embed_out = nn.Parameter(torch.Tensor(len(dictionary), self.args.latent_size * 2 + embed_dim))
             nn.init.normal_(self.embed_out, mean=0, std=self.output_embed_dim ** -0.5)
 
         if args.decoder_normalize_before and not getattr(args, 'no_decoder_final_norm', False):
             self.layer_norm = LayerNorm(embed_dim)
         else:
             self.layer_norm = None
-
-        self.do_vae = args.setting == 4 or args.setting == 5 or args.setting == 7
 
     def forward(self, prev_output_tokens, encoder_out=None, incremental_state=None, **unused):
         """
@@ -791,11 +721,11 @@ class TransformerSentenceEmbeddingDecoderLayer(TransformerDecoderLayer):
             (default: False).
     """
 
-    def __init__(self, args, no_encoder_attn=False, add_bias_kv=False, add_zero_attn=False, trans=True):
+    def __init__(self, args, add_bias_kv=False, add_zero_attn=False, do_trans=True):
         super().__init__(args)
         self.embed_dim = args.decoder_embed_dim
         self.args = args
-        self.trans = trans
+        self.do_trans = do_trans
         self.self_attn = MultiheadAttention(
             embed_dim=self.embed_dim,
             num_heads=args.decoder_attention_heads,
@@ -820,19 +750,7 @@ class TransformerSentenceEmbeddingDecoderLayer(TransformerDecoderLayer):
         export = getattr(args, 'char_inputs', False)
         self.self_attn_layer_norm = LayerNorm(self.embed_dim, export=export)
 
-        #if no_encoder_attn:
-        self.encoder_attn = None
         self.encoder_attn_layer_norm = LayerNorm(self.embed_dim)
-        #else:
-        #    self.encoder_attn = MultiheadAttention(
-        #        self.embed_dim,
-        #        args.decoder_attention_heads,
-        #        kdim=getattr(args, 'encoder_embed_dim', None),
-        #        vdim=getattr(args, 'encoder_embed_dim', None),
-        #        dropout=args.attention_dropout,
-        #        encoder_decoder_attention=True,
-        #    )
-        #    self.encoder_attn_layer_norm = LayerNorm(self.embed_dim, export=export)
 
         self.fc1 = Linear(self.embed_dim, args.decoder_ffn_embed_dim)
         self.fc2 = Linear(args.decoder_ffn_embed_dim, self.embed_dim)
@@ -842,13 +760,10 @@ class TransformerSentenceEmbeddingDecoderLayer(TransformerDecoderLayer):
 
         self.onnx_trace = False
 
-        if trans:
+        if do_trans:
             self.decoder_fc1 = Linear(self.embed_dim + self.args.latent_size, self.embed_dim)
         else:
-            if args.lv_dim > 0:
-                self.decoder_fc1 = Linear(self.embed_dim + self.args.latent_size + self.args.lv_dim, self.embed_dim)
-            else:
-                self.decoder_fc1 = Linear(self.embed_dim + self.args.latent_size * 2, self.embed_dim)
+            self.decoder_fc1 = Linear(self.embed_dim + self.args.latent_size * 2, self.embed_dim)
 
     def forward(
         self,

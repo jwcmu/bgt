@@ -165,21 +165,6 @@ class BGTTask(FairseqTask):
         assert src_dict.eos() == tgt_dict.eos()
         assert src_dict.unk() == tgt_dict.unk()
 
-        #add extra tokens
-        if args.add_lang_tokens:
-            src_dict.add_symbol(_lang_token("src"))
-            tgt_dict.add_symbol(_lang_token("src"))
-
-            src_dict.add_symbol(_lang_token("tgt"))
-            tgt_dict.add_symbol(_lang_token("tgt"))
-
-        if args.add_encoder_tokens:
-            src_dict.add_symbol(_lang_token("lang"))
-            tgt_dict.add_symbol(_lang_token("lang"))
-
-            src_dict.add_symbol(_lang_token("sem"))
-            tgt_dict.add_symbol(_lang_token("sem"))
-
         print('| [{}] dictionary: {} types'.format(args.source_lang, len(src_dict)))
         print('| [{}] dictionary: {} types'.format(args.target_lang, len(tgt_dict)))
 

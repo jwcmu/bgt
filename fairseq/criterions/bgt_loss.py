@@ -41,7 +41,6 @@ class BGTLossCriterion(FairseqCriterion):
         self.x0 = args.x0
         self.translation_loss = args.translation_loss
         self.reconstruction_loss = args.reconstruction_loss
-        self.cross_entropy = args.cross_entropy
 
     @staticmethod
     def add_args(parser):
@@ -97,12 +96,8 @@ class BGTLossCriterion(FairseqCriterion):
         trans_loss = torch.tensor(0.)
         en_trans_loss, nll_loss = self.compute_loss(model, [net_output['fr_trans_logits']], en_target, reduce=reduce)
 
-        if self.cross_entropy:
-            loss += self.translation_loss * nll_loss
-            trans_loss += self.translation_loss * nll_loss
-        else:
-            loss += self.translation_loss * en_trans_loss
-            trans_loss += self.translation_loss * en_trans_loss
+        loss += self.translation_loss * en_trans_loss
+        trans_loss += self.translation_loss * en_trans_loss
 
         fr_trans_loss, _ = self.compute_loss(model, [net_output['en_trans_logits']], fr_target,
                                                         reduce=reduce)
