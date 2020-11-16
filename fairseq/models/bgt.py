@@ -56,19 +56,18 @@ class BGTModel(BaseFairseqModel):
         super().__init__()
         self.args = args
         self.encoder_sem = encoder_sem
+        self.encoder_en = encoder_en
+        self.encoder_fr = encoder_fr
+
         self.decoder_fr = decoder_fr
         self.decoder_en = decoder_en
+
         self.decoder_trans_en = decoder_trans_en
         self.decoder_trans_fr = decoder_trans_fr
 
-        #needed for pooling archs
-        #self.latent2hidden = nn.Linear(args.latent_size, args.decoder_output_dim, bias=False)
-        self.translation_type = args.translation_type
-        self.consistent = args.consistent
-
         self.epoch_iter = None
 
-        self.do_vae = args.setting == 5
+        self.do_vae = args.setting == "bgt"
         self.num_updates = 0
         self.counter = 0
 
@@ -141,53 +140,12 @@ class BGTModel(BaseFairseqModel):
                                  'Must be used with adaptive_loss criterion'),
         parser.add_argument('--adaptive-softmax-dropout', type=float, metavar='D',
                             help='sets adaptive softmax dropout for the tail projections')
-        parser.add_argument('--setting', type=int, metavar='D',
+        parser.add_argument('--bgt-setting', type=str, metavar='STR',
                             help='which experiment to run, choices are: '
-                            '1 - english translation'
-                            '2 - french translation'
-                            '3 - english and french translation'
-                            '4 - BGT model (english only)'
-                            '5 - BGT model (joint w/ shared encoder)'
-                            '6 - BGT model no latent variable baseline'
-                            '7 - BGT model no language variables'
-                            '8 - english autoencoder'
-                            '9 - english VAE'
-                            )
-        parser.add_argument('--bgt-setting', type=int, metavar='D',
-                            help='which bgt experiment to run, choices are: '
-                            '1 - english only'
-                            '2 - alternating'
-                            '3 - pooled'
-                            '4 - share embeddings'
-                            )
-        parser.add_argument('--vae_pool', default="max", metavar='D',
-                            help='type of pooling ot use')
-        parser.add_argument('--view_dropout', type=float, default=0.5, metavar='D',
-                            help='dropout rate of views')
-        parser.add_argument('--freeze', type=int, default=0, metavar='D',
-                            help='num epochs to freeze encoders')
+                            'trans - translation baseline'
+                            'bgt - bgt model')
         parser.add_argument('--latent-size', type=int, default=0,metavar='D',
                             help='size of latent embeddings')
-        parser.add_argument('--tie-decoders', type=int, default=0,metavar='D',
-                            help='tie en and fr decoders')
-        parser.add_argument('--share-duplicated-embeddings', type=int, default=0,metavar='D',
-                            help='whether to only make 1 copy each of src and tgt embeddings')
-        parser.add_argument('--proper-full-ce', default=False, action='store_true',
-                            help='dont weight ce term in ELBO')
-        parser.add_argument('--translation-type', default='sample', choices=['sample', 'zero'], metavar='D',
-                            help='number of translation samples. -1 is all.')
-        parser.add_argument('--consistent', type=int, default=0, metavar='D',
-                            help='number of translation samples. -1 is all.')
-        parser.add_argument('--lv-dim', type=int, default=0,
-                            help='size of latent embeddings')
-        parser.add_argument('--condition-on-sem', type=int, default=0,
-                            help='share decoder input and output embeddings')
-        parser.add_argument('--use-mean', type=int, default=0,
-                            help='share decoder input and output embeddings')
-        parser.add_argument('--add-lang-tokens', type=int, default=0,
-                            help='share decoder input and output embeddings')
-        parser.add_argument('--add-encoder-tokens', type=int, default=0,
-                            help='share decoder input and output embeddings')
         # fmt: on
 
     @classmethod
@@ -241,7 +199,9 @@ class BGTModel(BaseFairseqModel):
                 tgt_dict, args.decoder_embed_dim, args.decoder_embed_path
             )
 
-        if args.setting == 5:
+        if args.setting == "trans":
+            pass
+        elif args.setting == "bgt":
             assert len(src_dict.symbols) == len(tgt_dict.symbols)
             encoder_sem = cls.build_encoder(args, src_dict, encoder_embed_tokens)
             decoder_fr = cls.build_decoder(args, tgt_dict, decoder_embed_tokens, trans=False)
@@ -260,6 +220,9 @@ class BGTModel(BaseFairseqModel):
             return BGTModel(args, encoder_sem=encoder_sem, decoder_fr=decoder_fr, decoder_en=decoder_en,
                             decoder_trans_en=decoder_trans_en, decoder_trans_fr=decoder_trans_fr, src_dict=src_dict,
                             tgt_dict=tgt_dict)
+        else:
+            raise ValueError(
+                '--bgt-setting must be either \'trans\' or \'bgt\'')
 
     @classmethod
     def build_encoder(cls, args, src_dict, embed_tokens):

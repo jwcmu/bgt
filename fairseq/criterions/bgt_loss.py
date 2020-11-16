@@ -39,13 +39,9 @@ class BGTLossCriterion(FairseqCriterion):
         self.args = args
         self.eps = args.label_smoothing
         self.x0 = args.x0
-        self.kl_threshold = args.kl_threshold
         self.translation_loss = args.translation_loss
         self.reconstruction_loss = args.reconstruction_loss
-        self.reg_loss = args.reg_loss
         self.cross_entropy = args.cross_entropy
-        self.lv_weight = args.lv_weight
-        self.kl_weight = args.kl_weight
 
     @staticmethod
     def add_args(parser):
@@ -55,19 +51,9 @@ class BGTLossCriterion(FairseqCriterion):
                             help='epsilon for label smoothing, 0 means no label smoothing')
         parser.add_argument('--x0', default=0., type=float, metavar='D',
                             help='annealing rate')
-        parser.add_argument('--kl-threshold', default=0., type=float, metavar='D',
-                            help='target value for KL')
         parser.add_argument('--translation-loss', default=1., type=float, metavar='D',
                             help='weight on translation loss')
         parser.add_argument('--reconstruction-loss', default=1., type=float, metavar='D',
-                            help='weight on translation loss')
-        parser.add_argument('--reg-loss', default=0, type=float, metavar='D',
-                            help='weight on translation loss')
-        parser.add_argument('--cross_entropy', default=0, type=int, metavar='D',
-                            help='weight on translation loss')
-        parser.add_argument('--lv-weight', default=1, type=float, metavar='D',
-                            help='weight on translation loss')
-        parser.add_argument('--kl-weight', default=1, type=float, metavar='D',
                             help='weight on translation loss')
         # fmt: on
 
@@ -99,24 +85,8 @@ class BGTLossCriterion(FairseqCriterion):
         _, nll_loss_lv_fr = self.compute_loss(model, [net_output['fr_lv_logits']], en_target, reduce=True)
 
         #compute KL term
-        if self.kl_threshold > 0:
-            KL_loss = -0.5 * (1 + net_output['logv'] - net_output['mean'].pow(2) -
-                                                   net_output['logv'].exp())
-            KL_loss = torch.sum(torch.clamp(KL_loss, min=self.kl_threshold / KL_loss.size()[1]))
-        else:
-            KL_loss = -0.5 * torch.sum(
+        KL_loss = -0.5 * torch.sum(
                 1 + net_output['logv'] - net_output['mean'].pow(2) - net_output['logv'].exp())
-
-        if self.lv_weight != 1:
-            weight = self.lv_weight - 1
-            if self.kl_threshold > 0:
-                shared_KL_loss = -0.5 * (1 + net_output['lv_logv'] - net_output['lv_mean'].pow(2) -
-                                  net_output['lv_logv'].exp())
-                shared_KL_loss = torch.sum(torch.clamp(shared_KL_loss, min=self.kl_threshold / KL_loss.size()[1]))
-            else:
-                shared_KL_loss = -0.5 * torch.sum(
-                    1 + net_output['lv_logv'] - net_output['lv_mean'].pow(2) - net_output['lv_logv'].exp())
-            KL_loss += weight * shared_KL_loss
 
         #compute loss
         KL_weight = self.kl_anneal_function(model.num_updates, self.x0)
@@ -124,34 +94,21 @@ class BGTLossCriterion(FairseqCriterion):
         recon_loss = self.reconstruction_loss * (nll_loss_lv_en + nll_loss_lv_fr)
         loss = recon_loss + self.kl_weight * KL_weight * KL_loss
 
-        #if self.translation_loss:
-        nll_loss = torch.tensor(0)
         trans_loss = torch.tensor(0.)
-        reg_loss = torch.tensor(0.)
-        if 'fr_trans_logits' in net_output:
-            en_trans_loss, nll_loss = self.compute_loss(model, [net_output['fr_trans_logits']], en_target, reduce=reduce)
+        en_trans_loss, nll_loss = self.compute_loss(model, [net_output['fr_trans_logits']], en_target, reduce=reduce)
 
-            if self.cross_entropy:
-                loss += self.translation_loss * nll_loss
-                trans_loss += self.translation_loss * nll_loss
-            else:
-                loss += self.translation_loss * en_trans_loss
-                trans_loss += self.translation_loss * en_trans_loss
+        if self.cross_entropy:
+            loss += self.translation_loss * nll_loss
+            trans_loss += self.translation_loss * nll_loss
+        else:
+            loss += self.translation_loss * en_trans_loss
+            trans_loss += self.translation_loss * en_trans_loss
 
-        if self.args.setting == 5:
-            if 'en_trans_logits' in net_output:
-                fr_trans_loss, fr_nll_loss = self.compute_loss(model, [net_output['en_trans_logits']], fr_target,
-                                                                reduce=reduce)
-                if self.cross_entropy:
-                    loss += self.translation_loss * fr_nll_loss
-                    trans_loss += self.translation_loss * fr_nll_loss
-                else:
-                    loss += self.translation_loss * fr_trans_loss
-                    trans_loss += self.translation_loss * fr_trans_loss
+        fr_trans_loss, _ = self.compute_loss(model, [net_output['en_trans_logits']], fr_target,
+                                                        reduce=reduce)
 
-        if self.reg_loss > 0:
-            reg_loss = self.reg_loss * torch.norm(net_output['sem_en'] - net_output['sem_fr'], 2)
-            loss += reg_loss
+        loss += self.translation_loss * fr_trans_loss
+        trans_loss += self.translation_loss * fr_trans_loss
 
         sample_size = sample['en_target (french)'].size(0)
 
@@ -162,7 +119,6 @@ class BGTLossCriterion(FairseqCriterion):
             'nll_loss': utils.item(nll_loss.data) if reduce else nll_loss.data,
             'recon_loss': utils.item(recon_loss.data),
             'trans_loss': utils.item(trans_loss.data),
-            'reg_loss': utils.item(reg_loss.data),
             'ntokens': sample['en_ntokens'],
             'nsentences': sample['en_target (french)'].size(0),
             'sample_size': sample_size,
@@ -192,7 +148,6 @@ class BGTLossCriterion(FairseqCriterion):
             'nll_loss': sum(log.get('nll_loss', 0) for log in logging_outputs) / ntokens / math.log(2) if ntokens > 0 else 0.,
             'recon_loss': sum(log.get('recon_loss', 0) for log in logging_outputs) / sample_size if sample_size > 0 else 0.,
             'trans_loss': sum(log.get('trans_loss', 0) for log in logging_outputs) / sample_size if sample_size > 0 else 0.,
-            'reg_loss': sum(log.get('reg_loss', 0) for log in logging_outputs) / sample_size if sample_size > 0 else 0.,
             'ntokens': ntokens,
             'nsentences': nsentences,
             'sample_size': sample_size,

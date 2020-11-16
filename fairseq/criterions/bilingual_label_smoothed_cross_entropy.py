@@ -53,8 +53,8 @@ class BiLingualLabelSmoothedCrossEntropyCriterion(FairseqCriterion):
         2) the sample size, which is used as the denominator for the gradient
         3) logging outputs to display while training
         """
-
         assert self.args.sentence_avg
+
         net_output = model(sample['en_net_input']['src_tokens'], sample['en_net_input']['src_lengths'],
                            sample['en_net_input']['prev_output_tokens'], sample['fr_net_input']['src_tokens'],
                            sample['fr_net_input']['src_lengths'],
@@ -67,7 +67,7 @@ class BiLingualLabelSmoothedCrossEntropyCriterion(FairseqCriterion):
         fr_target_loss, _ = self.compute_loss(model, [net_output['fr_target']], fr_target, reduce=reduce)
         sample_size = sample['en_target'].size(0)
 
-        loss = 0.5*en_target_loss + 0.5*fr_target_loss
+        loss = 0.5 * (en_target_loss + fr_target_loss)
 
         #report NLL, ppl on english only
         logging_output = {
@@ -94,7 +94,7 @@ class BiLingualLabelSmoothedCrossEntropyCriterion(FairseqCriterion):
         nsentences = sum(log.get('nsentences', 0) for log in logging_outputs)
         sample_size = sum(log.get('sample_size', 0) for log in logging_outputs)
         return {
-            'loss': sum(log.get('loss', 0) for log in logging_outputs) / sample_size / math.log(2) if sample_size > 0 else 0.,
+            'loss': sum(log.get('loss', 0) for log in logging_outputs) / sample_size if sample_size > 0 else 0.,
             'nll_loss': sum(log.get('nll_loss', 0) for log in logging_outputs) / ntokens / math.log(2) if ntokens > 0 else 0.,
             'ntokens': ntokens,
             'nsentences': nsentences,
