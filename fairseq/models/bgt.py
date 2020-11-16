@@ -228,13 +228,13 @@ class BGTModel(BaseFairseqModel):
 
     def forward(self, sample):
 
-        en_src_tokens = sample['en_net_input']['src_tokens (english)']
-        en_src_lengths = sample['en_net_input']['src_lengths (english)']
-        en_prev_output_tokens = sample['en_net_input']['prev_output_tokens (french)']
+        en_src_tokens = sample['en_net_input']['src_tokens']
+        en_src_lengths = sample['en_net_input']['src_lengths']
+        en_prev_output_tokens = sample['en_net_input']['prev_output_tokens']
 
-        fr_src_tokens = sample['fr_net_input']['src_tokens (french)']
-        fr_src_lengths = sample['fr_net_input']['src_lengths (french)']
-        fr_prev_output_tokens = sample['fr_net_input']['prev_output_tokens (english)']
+        fr_src_tokens = sample['fr_net_input']['src_tokens']
+        fr_src_lengths = sample['fr_net_input']['src_lengths']
+        fr_prev_output_tokens = sample['fr_net_input']['prev_output_tokens']
 
         sem_encoder_out_en = self.encoder_sem(en_src_tokens, en_src_lengths)
         sem_encoder_out_fr = self.encoder_sem(fr_src_tokens, fr_src_lengths)
@@ -246,41 +246,43 @@ class BGTModel(BaseFairseqModel):
 
         self.counter += 1
 
-        en_encoder_out = self.encoder_sem(en_src_tokens, en_src_lengths)
-        fr_encoder_out = self.encoder_sem(fr_src_tokens, fr_src_lengths)
-
-        # get english decoder sentence embedding
-        en_z = torch.cat((en_encoder_out['mean'], sem_encoder_out['mean']), dim=1)
-        # get french decoder sentence embedding
-        fr_z = torch.cat((fr_encoder_out['mean'], sem_encoder_out['mean']), dim=1)
-
-        # get total z, mean, logv
-        z = torch.cat((sem_encoder_out['z'], en_encoder_out['z'], fr_encoder_out['z']), dim=1)
-        logv = torch.cat((sem_encoder_out['logv'], en_encoder_out['logv'], fr_encoder_out['logv']), dim=1)
-        lv_logv = torch.cat((en_encoder_out['logv'], fr_encoder_out['logv']), dim=1)
-
-        mean = torch.cat((sem_encoder_out['mean'], en_encoder_out['mean'], fr_encoder_out['mean']), dim=1)
-        lv_mean = torch.cat((en_encoder_out['mean'], fr_encoder_out['mean']), dim=1)
-
-        en_decoder_out = self.decoder_en(fr_prev_output_tokens, {'sent_emb': en_z,
-                                                                 'encoder_out': None, 'encoder_padding_mask': None})
-        fr_decoder_out = self.decoder_fr(en_prev_output_tokens, {'sent_emb': fr_z,
-                                                                 'encoder_out': None, 'encoder_padding_mask': None})
-
-        en_lv_logits = en_decoder_out[0] #use french target
-        fr_lv_logits = fr_decoder_out[0] #use english target
-
         decoder_out = {}
-        decoder_out['z'] = z
-        decoder_out['logv'] = logv
-        decoder_out['lv_logv'] = lv_logv
 
-        decoder_out['mean'] = mean
-        decoder_out['lv_mean'] = lv_mean
-        decoder_out['en_lv_logits'] = en_lv_logits
-        decoder_out['fr_lv_logits'] = fr_lv_logits
-        decoder_out['sem_en'] = sem_encoder_out_en['mean']
-        decoder_out['sem_fr'] = sem_encoder_out_fr['mean']
+        if self.bgt_setting == "bgt":
+            en_encoder_out = self.encoder_en(en_src_tokens, en_src_lengths)
+            fr_encoder_out = self.encoder_fr(fr_src_tokens, fr_src_lengths)
+
+            # get english decoder sentence embedding
+            en_z = torch.cat((en_encoder_out['mean'], sem_encoder_out['mean']), dim=1)
+            # get french decoder sentence embedding
+            fr_z = torch.cat((fr_encoder_out['mean'], sem_encoder_out['mean']), dim=1)
+
+            # get total z, mean, logv
+            z = torch.cat((sem_encoder_out['z'], en_encoder_out['z'], fr_encoder_out['z']), dim=1)
+            logv = torch.cat((sem_encoder_out['logv'], en_encoder_out['logv'], fr_encoder_out['logv']), dim=1)
+            lv_logv = torch.cat((en_encoder_out['logv'], fr_encoder_out['logv']), dim=1)
+
+            mean = torch.cat((sem_encoder_out['mean'], en_encoder_out['mean'], fr_encoder_out['mean']), dim=1)
+            lv_mean = torch.cat((en_encoder_out['mean'], fr_encoder_out['mean']), dim=1)
+
+            en_decoder_out = self.decoder_en(fr_prev_output_tokens, {'sent_emb': en_z,
+                                                                     'encoder_out': None, 'encoder_padding_mask': None})
+            fr_decoder_out = self.decoder_fr(en_prev_output_tokens, {'sent_emb': fr_z,
+                                                                     'encoder_out': None, 'encoder_padding_mask': None})
+
+            en_lv_logits = en_decoder_out[0] #use french target
+            fr_lv_logits = fr_decoder_out[0] #use english target
+
+            decoder_out['z'] = z
+            decoder_out['logv'] = logv
+            decoder_out['lv_logv'] = lv_logv
+
+            decoder_out['mean'] = mean
+            decoder_out['lv_mean'] = lv_mean
+            decoder_out['en_lv_logits'] = en_lv_logits
+            decoder_out['fr_lv_logits'] = fr_lv_logits
+            decoder_out['sem_en'] = sem_encoder_out_en['mean']
+            decoder_out['sem_fr'] = sem_encoder_out_fr['mean']
 
         #translation
         sent_emb = sem_encoder_out_en['mean']

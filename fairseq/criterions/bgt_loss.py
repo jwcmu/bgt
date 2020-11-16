@@ -75,8 +75,8 @@ class BGTLossCriterion(FairseqCriterion):
         assert self.args.sentence_avg
         net_output = model(sample)
 
-        en_target = sample['en_target (french)'].view(-1, 1)
-        fr_target = sample['fr_target (english)'].view(-1, 1)
+        en_target = sample['en_target'].view(-1, 1)
+        fr_target = sample['fr_target'].view(-1, 1)
 
         #compute loss on lv en
         _, nll_loss_lv_en = self.compute_loss(model, [net_output['en_lv_logits']], fr_target, reduce=True)
