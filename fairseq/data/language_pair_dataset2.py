@@ -58,7 +58,7 @@ def collate(
             'src_tokens': src_tokens,
             'src_lengths': src_lengths,
         },
-        'en_target (french)': target,
+        'en_target': target,
     }
     if prev_output_tokens is not None:
         batch['en_net_input']['prev_output_tokens'] = prev_output_tokens
