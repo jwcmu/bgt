@@ -36,6 +36,8 @@ def save_checkpoint(args, trainer, epoch_itr, val_loss):
     write_timer.start()
 
     epoch = epoch_itr.epoch
+    import pdb
+    pdb.set_trace()
     end_of_epoch = epoch_itr.end_of_epoch()
     updates = trainer.get_num_updates()
 

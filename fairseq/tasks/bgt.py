@@ -12,7 +12,7 @@ from fairseq.data import (
     data_utils,
     indexed_dataset,
     LanguagePairDataset,
-    LanguagePairDataset2,
+    LanguagePairDatasetBGT,
     StyleTransferDataset,
 )
 
@@ -71,7 +71,7 @@ def load_langpair_dataset(
         src_dataset = ConcatDataset(src_datasets, sample_ratios)
         tgt_dataset = ConcatDataset(tgt_datasets, sample_ratios)
 
-    return LanguagePairDataset2(
+    return LanguagePairDatasetBGT(
         src_dataset, src_dataset.sizes, src_dict,
         tgt_dataset, tgt_dataset.sizes, tgt_dict,
         left_pad_source=left_pad_source,

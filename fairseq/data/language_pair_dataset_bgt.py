@@ -104,7 +104,7 @@ def collate(
     return batch
 
 
-class LanguagePairDataset2(FairseqDataset):
+class LanguagePairDatasetBGT(FairseqDataset):
     """
     A pair of torch.utils.data.Datasets.
 

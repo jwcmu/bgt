@@ -43,7 +43,7 @@ from .transform_eos_dataset import TransformEosDataset
 from .transform_eos_lang_pair_dataset import TransformEosLangPairDataset
 from .truncate_dataset import TruncateDataset
 from .resampling_dataset import ResamplingDataset
-from .language_pair_dataset2 import LanguagePairDataset2
+from .language_pair_dataset_bgt import LanguagePairDatasetBGT
 from .style_transfer_dataset import StyleTransferDataset
 
 from .iterators import (
@@ -69,7 +69,7 @@ __all__ = [
     'IndexedDataset',
     'IndexedRawTextDataset',
     'LanguagePairDataset',
-    'LanguagePairDataset2',
+    'LanguagePairDatasetBGT',
     'LeftPadDataset',
     'ListDataset',
     'LMContextWindowDataset',
