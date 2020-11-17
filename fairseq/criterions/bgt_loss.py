@@ -115,10 +115,10 @@ class BGTLossCriterion(FairseqCriterion):
             'recon_loss': utils.item(recon_loss.data),
             'trans_loss': utils.item(trans_loss.data),
             'ntokens': sample['en_ntokens'],
-            'nsentences': sample['en_target (french)'].size(0),
+            'nsentences': sample['en_target'].size(0),
             'sample_size': sample_size,
-            'au': utils.item(au * sample['en_target (french)'].size(0)),
-            'kl_weight': KL_weight * sample['en_target (french)'].size(0),
+            'au': utils.item(au * sample['en_target'].size(0)),
+            'kl_weight': KL_weight * sample['en_target'].size(0),
             'kl_loss': utils.item(KL_loss.data),
         }
         return loss, sample_size, logging_output
