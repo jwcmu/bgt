@@ -276,9 +276,9 @@ class BGTModel(BaseFairseqModel):
             decoder_out['z'] = z
             decoder_out['logv'] = logv
             decoder_out['lv_logv'] = lv_logv
-
             decoder_out['mean'] = mean
             decoder_out['lv_mean'] = lv_mean
+
             decoder_out['en_lv_logits'] = en_lv_logits
             decoder_out['fr_lv_logits'] = fr_lv_logits
             decoder_out['sem_en'] = sem_encoder_out_en['mean']

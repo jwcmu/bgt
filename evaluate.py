@@ -260,7 +260,7 @@ def batcher(params, batch, lang="en"):
         p = params.sp.EncodeAsPieces(p)
         p = " ".join(p)
         new_batch.append(p)
-    vecs = params.embedder.embed(new_batch, params.encoder, lang="en", lang_emb=params.lang_emb)
+    vecs = params.embedder.embed(new_batch, params.encoder, lang="en")
     return vecs
 
 def evaluate(embedder, args):
@@ -273,7 +273,7 @@ def evaluate(embedder, args):
     from argparse import Namespace
 
     args = Namespace(batch_size=32, entok=entok, sp=sp, embedder=embedder,
-                     encoder=args.eval_encoder, tokenize=args.tokenize, lang_emb=args.lang_emb)
+                     encoder=args.eval_encoder, tokenize=args.tokenize)
 
     s = STS12Eval('STS/STS12-en-test')
     s.do_prepare()

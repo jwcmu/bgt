@@ -128,8 +128,7 @@ class Embedder():
 
         return toks, lens
 
-    def embed(self, inputs, encoder, lang="en", lang_emb=False):
-
+    def embed(self, inputs, encoder):
         self.model.eval()
 
         encoder = getattr(self.model, encoder)
@@ -137,13 +136,10 @@ class Embedder():
         results = []
         for batch in make_batches(inputs, self.args, self.task, self.max_positions, lambda x: x):
             if self.use_cuda:
-                toks, lens = self.add_extra_tokens(batch[1].cuda(), batch[2].cuda(), self.model.args.add_lang_tokens,
-                                                   self.model.args.add_encoder_tokens, self.model.dict, lang=lang, lang_emb=lang_emb)
-                vecs = encoder(toks, lens, False, sem=not lang_emb)
+                toks, lens = batch[1].cuda(), batch[2].cuda()
             else:
-                toks, lens = self.add_extra_tokens(batch[1], batch[2], self.model.args.add_lang_tokens,
-                                                   self.model.args.add_encoder_tokens, self.model.dict, lang=lang, lang_emb=lang_emb)
-                vecs = encoder(toks, lens, False, sem=not lang_emb)
+                toks, lens = batch[1], batch[2]
+            vecs = encoder(toks, lens, generate=False)
             results.append((batch.ids, vecs['mean'].detach().cpu().numpy()))
 
         vecs = np.vstack([i[1] for i in results])
