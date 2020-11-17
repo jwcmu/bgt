@@ -60,8 +60,8 @@ class BiLingualLabelSmoothedCrossEntropyCriterion(FairseqCriterion):
         en_target = sample['en_target'].view(-1, 1)
         fr_target = sample['fr_target'].view(-1, 1)
 
-        en_target_loss, nll_loss = self.compute_loss(model, [net_output['en_target']], en_target, reduce=reduce)
-        fr_target_loss, _ = self.compute_loss(model, [net_output['fr_target']], fr_target, reduce=reduce)
+        en_target_loss, nll_loss = self.compute_loss(model, [net_output['fr_trans_logits']], en_target, reduce=reduce)
+        fr_target_loss, _ = self.compute_loss(model, [net_output['en_trans_logits']], fr_target, reduce=reduce)
         sample_size = sample['en_target'].size(0)
 
         loss = 0.5 * (en_target_loss + fr_target_loss)

@@ -105,7 +105,7 @@ class BGTLossCriterion(FairseqCriterion):
         loss += self.translation_loss * fr_trans_loss
         trans_loss += self.translation_loss * fr_trans_loss
 
-        sample_size = sample['en_target (french)'].size(0)
+        sample_size = sample['en_target'].size(0)
 
         au = self.get_au(net_output['mean'])
 
