@@ -260,7 +260,7 @@ def batcher(params, batch, lang="en"):
         p = params.sp.EncodeAsPieces(p)
         p = " ".join(p)
         new_batch.append(p)
-    vecs = params.embedder.embed(new_batch, params.encoder, lang="en")
+    vecs = params.embedder.embed(new_batch, params.encoder)
     return vecs
 
 def evaluate(embedder, args):
