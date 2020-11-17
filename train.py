@@ -107,14 +107,11 @@ def main(args, init_distributed=False):
         lr = trainer.lr_step(epoch_itr.epoch, valid_losses[0])
 
         embedder = Embedder(args, model, task)
-        sts = evaluate(embedder, args)
+        evaluate(embedder, args)
 
         # save checkpoint
         if epoch_itr.epoch % args.save_interval == 0:
-            if args.save_sts:
-                checkpoint_utils.save_checkpoint(args, trainer, epoch_itr, -sts)
-            else:
-                checkpoint_utils.save_checkpoint(args, trainer, epoch_itr, valid_losses[0])
+            checkpoint_utils.save_checkpoint(args, trainer, epoch_itr, valid_losses[0])
 
         reload_dataset = ':' in getattr(args, 'data', '')
         # sharded data: get train iterator for next epoch
