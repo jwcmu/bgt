@@ -91,7 +91,7 @@ class BGTLossCriterion(FairseqCriterion):
         KL_weight = self.kl_anneal_function(model.num_updates, self.x0)
 
         recon_loss = self.reconstruction_loss * (nll_loss_lv_en + nll_loss_lv_fr)
-        loss = recon_loss + self.kl_weight * KL_weight * KL_loss
+        loss = recon_loss + KL_weight * KL_loss
 
         trans_loss = torch.tensor(0.)
         en_trans_loss, nll_loss = self.compute_loss(model, [net_output['fr_trans_logits']], en_target, reduce=reduce)
