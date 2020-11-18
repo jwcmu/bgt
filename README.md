@@ -6,38 +6,63 @@ To get started, follow the installation and setup instructions below.
 
 If you use our code for your work please cite:
 
-    @inproceedings{wieting2019beyond,
-        title={Beyond BLEU: Training Neural Machine Translation with Semantic Similarity},
-        author={Wieting, John and Berg-Kirkpatrick, Taylor and Gimpel, Kevin and Neubig, Graham},
-        booktitle={Proceedings of the Association for Computational Linguistics},
-        url = {https://arxiv.org/abs/1909.06694},
+    @article{wieting2019bilingual,
+        title={A Bilingual Generative Transformer for Semantic Sentence Embedding},
+        author={Wieting, John and Neubig, Graham and Berg-Kirkpatrick, Taylor},
+        booktitle={Proceedings of the Empirical Methods in Natural Language Processing},
+        url={https://arxiv.org/abs/1911.03895},
         year={2019}
     }
 
 Installation and setup instructions:
 
-7. Download and unzip data and semantic similarity models from http://www.cs.cmu.edu/~jwieting.
+1. Clone the respository and install the code:
 
-        wget http://www.cs.cmu.edu/~jwieting/beyond_bleu.zip .
-        unzip beyond_bleu.zip
-        rm beyond_bleu.zip
+        git clone https://github.com/jwieting/bilingual-generative-transformer.git
+        cd bilingual-generative-transformer
+        pip install --editable .
 
-To train baseline MLE models in language xx, choices are cs, de, ru, or tr:
+2. Download the data files used for training and saved models from http://www.cs.cmu.edu/~jwieting:
 
-    python train.py beyond_bleu/data/data-xx -a fconv_iwslt_de_en --lr 0.25 --clip-norm 0.1 --dropout 0.3 --max-tokens 1000 -s xx -t en --label-smoothing 0.1 --force-anneal 200 --save-dir checkpoints_xx --no-epoch-checkpoints
+        wget http://www.cs.cmu.edu/~jwieting/bgt.zip .
+        unzip bgt.zip
+        rm bgt.zip
+        
+3. Download the STS evaluation data:
 
-To train baseline minimum risk models with 1-sBLEU as a cost with alpha=0.3:
+        wget http://www.cs.cmu.edu/~jwieting/STS.zip .
+        unzip STS.zip
+        rm STS.zip
 
-    mkdir checkpoints_xx_0.3_word_0.0
-    cp beyond_bleu/checkpoints/checkpoints_xx/checkpoint_best.pt checkpoints_xx_0.3_word_0.0/checkpoint_last.pt
-    python train.py beyond_bleu/data/data-xx -a fconv_iwslt_de_en --clip-norm 0.1 --momentum 0.9 --lr 0.25 --label-smoothing 0.1 --dropout 0.3 --max-tokens 500 --seq-max-len-a 1.5 --seq-max-len-b 5 --seq-criterion SequenceRiskCriterion --seq-combined-loss-alpha 0.3 --force-anneal 11 --seq-beam 8 --save-dir checkpoints_xx_0.3_word_0.0 --seq-score-alpha 0 -s xx -t en --reset-epochs
+To train the BGT model (on French OpenSubtitles 2018 and Gigaword data) other choices include (OpenSubtitles 2018 ar, es, ja, and tr):
 
-To train baseline minimum risk models with 1-SimiLe as a cost with alpha=0.3:
+    python -u train.py data/fr-os-giga/data-joint-bin -a bgt-emnlp --bgt-setting trans --optimizer adam --lr 0.0005 -s en -t fr --label-smoothing 0.1 \
+    --dropout 0.3 --max-tokens 1000 --min-lr '1e-09' --lr-scheduler inverse_sqrt --weight-decay 0.0001 \
+    --criterion bilingual_label_smoothed_cross_entropy --max-epoch 20 --warmup-updates 4000 --warmup-init-lr '1e-07' \
+    --adam-betas '(0.9, 0.98)' --save-dir checkpoints/trans --distributed-world-size 1 --latent-size 1024 --update-freq 50 \
+    --task bgt --save-interval-updates 0 --sentencepiece data/fr-os-giga/fr-en.1m.tok.all.sp.20k.model --sentence-avg \
+    --num-workers 0
 
-    mkdir checkpoints_xx_0.3_word_1.0
-    cp beyond_bleu/checkpoints/checkpoints_xx/checkpoint_best.pt checkpoints_xx_0.3_word_1.0/checkpoint_last.pt
-    python train.py beyond_bleu/data/data-xx -a fconv_iwslt_de_en --clip-norm 0.1 --momentum 0.9 --lr 0.25 --label-smoothing 0.1 --dropout 0.3 --max-tokens 500 --seq-max-len-a 1.5 --seq-max-len-b 5 --seq-criterion SequenceRiskCriterion --seq-combined-loss-alpha 0.3 --force-anneal 11 --seq-beam 8 --save-dir checkpoints_xx_0.3_word_1.0 --seq-score-alpha 1 -s xx -t en --sim-model-file beyond_bleu/sim/sim.pt --reset-epochs
+To train the translation (Trans) baseline model (on French OpenSubtitles 2018 and Gigaword data) other choices include (OpenSubtitles 2018 ar, es, ja, and tr):
 
-To evaluate models in terms of corpus BLEU, SIM, and SimiLe:
+    python -u train.py data/fr-os-giga/data-joint-bin -a bgt-emnlp --bgt-setting bgt --optimizer adam --lr 0.0005 -s en -t fr --label-smoothing 0.1 \
+    --dropout 0.3 --max-tokens 1000 --min-lr '1e-09' --lr-scheduler inverse_sqrt --weight-decay 0.0001 --criterion bgt_loss \
+    --max-epoch 20 --warmup-updates 4000 --warmup-init-lr '1e-07' --adam-betas '(0.9, 0.98)' --save-dir checkpoints/bgt \
+    --distributed-world-size 1 --latent-size 1024 --update-freq 50 --task bgt --save-interval-updates 0 \
+    --sentencepiece data/fr-os-giga/fr-en.1m.tok.all.sp.20k.model --x0 65536 --translation-loss 1.0 --sentence-avg \
+    --num-workers 0
 
-    python evaluate.py --data beyond_bleu/data/data-xx -s xx -t en --save-dir checkpoints_xx_0.3_word_1.0 --length_penalty 0.25 --sim-model-file beyond_bleu/sim/sim.pt
+To evaluate a model on the STS tasks:
+
+    python -u evaluate.py data/fr-os-giga/data-joint-bin -s en -t fr --path checkpoints/bgt/checkpoint_best.pt 
+    --sentencepiece data/fr-os-giga/fr-en.1m.tok.all.sp.20k.model
+
+To score a list of sentence pairs in tab-separated (tsv) format:
+
+    python -u evaluate_list.py data/fr-os-giga/data-joint-bin -s en -t fr --path checkpoints/bgt/checkpoint_best.pt  
+    --sentencepiece data/fr-os-giga/fr-en.1m.tok.all.sp.20k.model --sim-file data/sentences.txt
+
+To generate outputs following our "style-transfer" setting:
+
+    python -u style_transfer.py data/fr-os-giga/data-joint-bin -s en -t fr --path checkpoints/bgt/checkpoint_best.pt 
+    --sentencepiece data/fr-os-giga/fr-en.1m.tok.all.sp.20k.model --task bgt --remove-bpe sentencepiece --style-transfer-file data/style_transfer.txt
