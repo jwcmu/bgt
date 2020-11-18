@@ -330,7 +330,6 @@ if __name__ == '__main__':
     from fairseq import options
 
     parser = options.get_generation_parser(interactive=True)
-    options.add_embed_args(parser)
     args = options.parse_args_and_arch(parser)
 
     embedder = Embedder(args)

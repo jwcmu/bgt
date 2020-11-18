@@ -102,32 +102,6 @@ class Embedder():
             self.max_positions = task.max_positions()
             self.use_cuda = torch.cuda.is_available() and not args.cpu
 
-    def add_extra_tokens(self, toks, lens, add_lang_tokens, add_encoder_tokens, vocab, lang="en", lang_emb=False):
-
-        if lang_emb:
-            if add_lang_tokens:
-                if "__{0}__".format(lang) in vocab.indices:
-                    lang_tok = vocab.indices["__{0}__".format(lang)]
-                else:
-                    lang_tok = vocab.indices["__en__"]
-
-                toks_to_add = toks.clone()[:,0] * 0 + lang_tok
-                toks = torch.cat((toks_to_add[:,None], toks), dim=1)
-                lens = lens + 1
-
-            if add_encoder_tokens:
-                toks_to_add = toks.clone()[:, 0] * 0 + vocab.indices["__lang__"]
-                toks = torch.cat((toks_to_add[:, None], toks), dim=1)
-                lens = lens + 1
-
-
-        elif add_encoder_tokens:
-            toks_to_add = toks.clone()[:,0] * 0 + vocab.indices["__sem__"]
-            toks = torch.cat((toks_to_add[:,None], toks), dim=1)
-            lens = lens + 1
-
-        return toks, lens
-
     def embed(self, inputs, encoder):
         self.model.eval()
 
@@ -158,6 +132,7 @@ def cli_main():
 
     data = ['I have a dog.', 'How are you?', 'What!', 'I want something to eat.', 'How is youuuu?']
     vecs = embed.embed(data, 'encoder_sem')
+    print(vecs)
 
     return vecs
 

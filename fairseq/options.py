@@ -534,6 +534,8 @@ def add_bgt_args(parser):
                          help='path to sentencepiece file')
     group.add_argument('--sim-file',
                          help='path to tab-separated list of sentence pairs to score.')
+    group.add_argument('--style-transfer-file',
+                         help='path to tab-separated list of sentence pairs to score.')
     group.add_argument('--eval-encoder',
                          help='which encoder to use for evaluations', default="encoder_sem")
     group.add_argument('--tokenize',

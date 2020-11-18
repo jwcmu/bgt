@@ -1,7 +1,4 @@
 import sys
-PATH_TO_BGT = '/projects/tir3/users/jwieting/vae-expts2/bilingual-generative-transformer-fr-3'
-sys.path.insert(0, PATH_TO_BGT)
-
 from embed import Embedder
 from fairseq import options
 from sacremoses import MosesTokenizer
