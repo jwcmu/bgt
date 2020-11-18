@@ -8,9 +8,7 @@ from wer import wer
 def get_wer(s1, s2):
     s1 = s1.split()                                                                                                                                                                                                        
     s2 = s2.split()
-    #print(s1, s2, 0.5*wer(s1,s2) + 0.5*wer(s2,s1))
-    #return 1
-    return 0.5*wer(s1,s2) + 0.5*wer(s2,s1)
+    return 0.5 * wer(s1,s2) + 0.5 * wer(s2,s1)
 
 entok = MosesTokenizer(lang='en')
 
@@ -35,7 +33,6 @@ def make_dataset(f, gs):
 
     wers = []
     for i in range(len(sent1)):
-        #print(sent1[i], sent2[i])
         wers.append(get_wer(process(sent1[i]), process(sent2[i])))
 
     return list(zip(sent1, sent2, gs_scores, wers))
@@ -43,12 +40,10 @@ def make_dataset(f, gs):
 for i in textfiles:
     f = open(i, 'r')
     lines = f.readlines()
-    #print(i, len(lines))
 
 all_data = []
 all_wers = []
 for f in textfiles:
-    #print(i)
     gs = f.replace("input", "gs")
     data = make_dataset(f, gs)
     all_data.extend(data)
