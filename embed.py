@@ -130,7 +130,7 @@ def cli_main():
 
     embed = Embedder(args)
 
-    data = ['I have a dog.', 'How are you?', 'What!', 'I want something to eat.', 'How is youuuu?']
+    data = ['I have a dog.', 'How are you?', 'What!', 'I want something to eat.', 'How are youuuu?']
     vecs = embed.embed(data, 'encoder_sem')
     print(vecs)
 

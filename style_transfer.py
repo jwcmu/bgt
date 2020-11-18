@@ -181,9 +181,9 @@ def main(args, inputs):
         # Process top predictions
         for hypo in hypos[:min(len(hypos), args.nbest)]:
             hypo_tokens, hypo_str, alignment = utils.post_process_prediction(
-                hypo_tokens=hypo['tokens'].int().cpu(),
+                hypo_tokens=hypo['tokens'],
                 src_str=src_str,
-                alignment=hypo['alignment'].int().cpu() if hypo['alignment'] is not None else None,
+                alignment=hypo['alignment'] if hypo['alignment'] is not None else None,
                 align_dict=align_dict,
                 tgt_dict=tgt_dict,
                 remove_bpe=args.remove_bpe,
