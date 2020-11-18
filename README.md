@@ -16,13 +16,13 @@ If you use our code for your work please cite:
 
 Installation and setup instructions:
 
-1. Clone the respository and install the code:
+1. Clone the repository and install the code:
 
         git clone https://github.com/jwieting/bilingual-generative-transformer.git
         cd bilingual-generative-transformer
         pip install --editable .
 
-2. Download the data files used for training and saved models from http://www.cs.cmu.edu/~jwieting:
+2. Download the data files, including training data, and saved models from http://www.cs.cmu.edu/~jwieting:
 
         wget http://www.cs.cmu.edu/~jwieting/bgt.zip .
         unzip bgt.zip
@@ -34,35 +34,35 @@ Installation and setup instructions:
         unzip STS.zip
         rm STS.zip
 
-To train the BGT model (on French OpenSubtitles 2018 and Gigaword data) other choices include (OpenSubtitles 2018 ar, es, ja, and tr):
+To train the (Bilingual Generative Transformer) BGT model (on French OpenSubtitles 2018 and Gigaword data) other choices include (OpenSubtitles 2018 ar, es, fr, ja, and tr):
 
-    python -u train.py data/fr-os-giga/data-joint-bin -a bgt-emnlp --bgt-setting trans --optimizer adam --lr 0.0005 -s en -t fr --label-smoothing 0.1 \
+    python -u train.py bgt/fr-os-giga/data-joint-bin -a bgt-emnlp --bgt-setting trans --optimizer adam --lr 0.0005 -s en -t fr --label-smoothing 0.1 \
     --dropout 0.3 --max-tokens 1000 --min-lr '1e-09' --lr-scheduler inverse_sqrt --weight-decay 0.0001 \
     --criterion bilingual_label_smoothed_cross_entropy --max-epoch 20 --warmup-updates 4000 --warmup-init-lr '1e-07' \
     --adam-betas '(0.9, 0.98)' --save-dir checkpoints/trans --distributed-world-size 1 --latent-size 1024 --update-freq 50 \
-    --task bgt --save-interval-updates 0 --sentencepiece data/fr-os-giga/fr-en.1m.tok.all.sp.20k.model --sentence-avg \
+    --task bgt --save-interval-updates 0 --sentencepiece bgt/fr-os-giga/fr-en.1m.sp.20k.model --sentence-avg \
     --num-workers 0
 
-To train the translation (Trans) baseline model (on French OpenSubtitles 2018 and Gigaword data) other choices include (OpenSubtitles 2018 ar, es, ja, and tr):
+To train the translation (Trans) baseline model (on French OpenSubtitles 2018 and Gigaword data) other choices include (OpenSubtitles 2018 ar, es, fr, ja, and tr):
 
-    python -u train.py data/fr-os-giga/data-joint-bin -a bgt-emnlp --bgt-setting bgt --optimizer adam --lr 0.0005 -s en -t fr --label-smoothing 0.1 \
+    python -u train.py bgt/fr-os-giga/data-joint-bin -a bgt-emnlp --bgt-setting bgt --optimizer adam --lr 0.0005 -s en -t fr --label-smoothing 0.1 \
     --dropout 0.3 --max-tokens 1000 --min-lr '1e-09' --lr-scheduler inverse_sqrt --weight-decay 0.0001 --criterion bgt_loss \
     --max-epoch 20 --warmup-updates 4000 --warmup-init-lr '1e-07' --adam-betas '(0.9, 0.98)' --save-dir checkpoints/bgt \
     --distributed-world-size 1 --latent-size 1024 --update-freq 50 --task bgt --save-interval-updates 0 \
-    --sentencepiece data/fr-os-giga/fr-en.1m.tok.all.sp.20k.model --x0 65536 --translation-loss 1.0 --sentence-avg \
+    --sentencepiece bgt/fr-os-giga/fr-en.1m.sp.20k.model --x0 65536 --translation-loss 1.0 --sentence-avg \
     --num-workers 0
 
 To evaluate a model on the STS tasks:
 
-    python -u evaluate.py data/fr-os-giga/data-joint-bin -s en -t fr --path checkpoints/bgt/checkpoint_best.pt 
-    --sentencepiece data/fr-os-giga/fr-en.1m.tok.all.sp.20k.model
+    python -u evaluate.py bgt/fr-os-giga/data-joint-bin -s en -t fr --path checkpoints/bgt/checkpoint_best.pt 
+    --sentencepiece bgt/fr-os-giga/fr-en.1m.sp.20k.model
 
 To score a list of sentence pairs in tab-separated (tsv) format:
 
-    python -u evaluate_list.py data/fr-os-giga/data-joint-bin -s en -t fr --path checkpoints/bgt/checkpoint_best.pt  
-    --sentencepiece data/fr-os-giga/fr-en.1m.tok.all.sp.20k.model --sim-file data/sentences.txt
+    python -u evaluate_list.py bgt/fr-os-giga/data-joint-bin -s en -t fr --path checkpoints/bgt/checkpoint_best.pt  
+    --sentencepiece bgt/fr-os-giga/fr-en.1m.sp.20k.model --sim-file bgt/sentences.txt
 
 To generate outputs following our "style-transfer" setting:
 
-    python -u style_transfer.py data/fr-os-giga/data-joint-bin -s en -t fr --path checkpoints/bgt/checkpoint_best.pt 
-    --sentencepiece data/fr-os-giga/fr-en.1m.tok.all.sp.20k.model --task bgt --remove-bpe sentencepiece --style-transfer-file data/style_transfer.txt
+    python -u style_transfer.py bgt/fr-os-giga/data-joint-bin -s en -t fr --path checkpoints/bgt/checkpoint_best.pt 
+    --sentencepiece bgt/fr-os-giga/fr-en.1m.sp.20k.model --task bgt --remove-bpe sentencepiece --style-transfer-file bgt/style_transfer.txt
