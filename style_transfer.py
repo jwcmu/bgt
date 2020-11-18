@@ -142,7 +142,7 @@ def main(args, inputs):
     start_id = 0
     results = []
     for batch in make_batches(inputs, args, task, max_positions, encode_fn):
-        #print(batch)
+
         src_tokens = batch.src_tokens
         src_lengths = batch.src_lengths
 
@@ -152,6 +152,8 @@ def main(args, inputs):
         if use_cuda:
             src_tokens = src_tokens.cuda()
             src_lengths = src_lengths.cuda()
+            lang_src_tokens = lang_src_tokens.cuda()
+            lang_src_lengths = lang_src_lengths.cuda()
 
         sample = {
             'en_net_input': {
