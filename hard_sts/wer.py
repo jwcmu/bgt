@@ -2,7 +2,7 @@ import sys
 import numpy
 
 """
-From https://github.com/zszyellow/WER-in-python
+Adapted from https://github.com/zszyellow/WER-in-python
 """
 
 def editDistance(r, h):
@@ -191,9 +191,10 @@ def wer(r, h):
     list = getStepList(r, h, d)
 
     # print the result in aligned way
-    result = float(d[len(r)][len(h)]) / len(r) * 100
-    result = str("%.2f" % result) + "%"
+    _result = float(d[len(r)][len(h)]) / len(r) * 100
+    result = str("%.2f" % _result) + "%"
     alignedPrint(list, r, h, result)
+    return _result
 
 
 if __name__ == '__main__':

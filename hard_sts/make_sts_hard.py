@@ -12,7 +12,7 @@ def get_wer(s1, s2):
 
 entok = MosesTokenizer(lang='en')
 
-textfiles = glob("*-en-test/*input*txt")
+textfiles = glob("../STS/*-en-test/*input*txt")
 
 def make_dataset(f, gs):
     sent1, sent2 = zip(*[l.split("\t") for l in
