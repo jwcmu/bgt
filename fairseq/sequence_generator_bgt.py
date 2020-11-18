@@ -556,11 +556,11 @@ class EnsembleModel(torch.nn.Module):
         if not self.has_encoder():
             return None
         if lang_encoder_input is None:
-            return [model.encoder_sem(**encoder_input, freeze=0, generate=True) for model in self.models], \
-               [model.encoder_en(**encoder_input, freeze=0, generate=True) for model in self.models]
+            return [model.encoder_sem(**encoder_input, generate=True) for model in self.models], \
+               [model.encoder_en(**encoder_input, generate=True) for model in self.models]
         else:
-            return [model.encoder_sem(**encoder_input, freeze=0, generate=True) for model in self.models], \
-               [model.encoder_en(**lang_encoder_input, freeze=0, generate=True) for model in self.models]
+            return [model.encoder_sem(**encoder_input, generate=True) for model in self.models], \
+               [model.encoder_en(**lang_encoder_input, generate=True) for model in self.models]
 
     @torch.no_grad()
     def forward_decoder(self, tokens, encoder_outs, temperature=1.):
