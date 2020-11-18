@@ -213,7 +213,7 @@ def cli_main():
 
     entok = MosesTokenizer(lang='en')
 
-    f = open('training/style_transfer.txt')
+    f = open(args.style_transfer_file)
     lines = f.readlines()
     source = []
     style = []

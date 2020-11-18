@@ -12,7 +12,7 @@ python -u train.py data -a bgt-emnlp --bgt-setting bgt --optimizer adam --lr 0.0
 --sentencepiece data/fr-en.1m.tok.all.sp.20k.model --x0 65536 --translation-loss 1.0 --sentence-avg \
 --num-workers 0
 
-python -u style_transfer.py data -s en -t es --path checkpoints/bgt/checkpoint_best.pt --sentencepiece data/fr-en.1m.tok.all.sp.20k.model --gen-subset valid --task bgt --remove-bpe sentencepiece --style-transfer-file ../data/style_transfer.txt
-python -u evaluate.py data -s en -t es --path checkpoints/bgt/checkpoint_best.pt --sentencepiece data/fr-en.1m.tok.all.sp.20k.model
+python -u style_transfer.py data -s en -t fr --path checkpoints/bgt/checkpoint_best.pt --sentencepiece data/fr-en.1m.tok.all.sp.20k.model --gen-subset valid --task bgt --remove-bpe sentencepiece --style-transfer-file ../data/style_transfer.txt
+python -u evaluate.py data -s en -t fr --path checkpoints/bgt/checkpoint_best.pt --sentencepiece data/fr-en.1m.tok.all.sp.20k.model
 python -u evaluate_list.py data -s en -t fr --path checkpoints/bgt/checkpoint_best.pt  --sentencepiece data/fr-en.1m.tok.all.sp.20k.model --sim-file data/sentences.txt
 python -u embed.py data -s en -t fr --path checkpoints/bgt/checkpoint_best.pt  --sentencepiece data/fr-en.1m.tok.all.sp.20k.model --sim-file data/sentences.txt
