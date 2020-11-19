@@ -1,6 +1,6 @@
 # bilingual-generative-transformer
 
-Code to train models from "A Bilingual Generative Transformer for Semantic Sentence Embedding". Our code is based on the 58e43cb3ff18f1f47fd62926f00c70cb5920a66f commit Fairseq https://github.com/pytorch/fairseq from Facebook AI Research.
+Code to train models from "A Bilingual Generative Transformer for Semantic Sentence Embedding". Our code is based on the 58e43cb3ff18f1f47fd62926f00c70cb5920a66f commit from Fairseq https://github.com/pytorch/fairseq from Facebook AI Research.
 
 To get started, follow the installation and setup instructions below.
 
@@ -36,33 +36,33 @@ Installation and setup instructions:
 
 To train the (Bilingual Generative Transformer) BGT model (on French OpenSubtitles 2018 and Gigaword data) other choices include (OpenSubtitles 2018 ar, es, fr, ja, and tr):
 
-    python -u train.py bgt/fr-os-giga/data-joint-bin -a bgt-emnlp --bgt-setting trans --optimizer adam --lr 0.0005 -s en -t fr --label-smoothing 0.1 \
-    --dropout 0.3 --max-tokens 1000 --min-lr '1e-09' --lr-scheduler inverse_sqrt --weight-decay 0.0001 \
-    --criterion bilingual_label_smoothed_cross_entropy --max-epoch 20 --warmup-updates 4000 --warmup-init-lr '1e-07' \
-    --adam-betas '(0.9, 0.98)' --save-dir checkpoints/trans --distributed-world-size 1 --latent-size 1024 --update-freq 50 \
-    --task bgt --save-interval-updates 0 --sentencepiece bgt/fr-os-giga/fr-en.1m.sp.20k.model --sentence-avg \
-    --num-workers 0
-
-To train the translation (Trans) baseline model (on French OpenSubtitles 2018 and Gigaword data) other choices include (OpenSubtitles 2018 ar, es, fr, ja, and tr):
-
     python -u train.py bgt/fr-os-giga/data-joint-bin -a bgt-emnlp --bgt-setting bgt --optimizer adam --lr 0.0005 -s en -t fr --label-smoothing 0.1 \
     --dropout 0.3 --max-tokens 1000 --min-lr '1e-09' --lr-scheduler inverse_sqrt --weight-decay 0.0001 --criterion bgt_loss \
     --max-epoch 20 --warmup-updates 4000 --warmup-init-lr '1e-07' --adam-betas '(0.9, 0.98)' --save-dir checkpoints/bgt \
     --distributed-world-size 1 --latent-size 1024 --update-freq 50 --task bgt --save-interval-updates 0 \
     --sentencepiece bgt/fr-os-giga/fr-en.1m.sp.20k.model --x0 65536 --translation-loss 1.0 --sentence-avg \
-    --num-workers 0
+    --num-workers 0 --find-unused-parameters
+
+To train the translation (Trans) baseline model (on French OpenSubtitles 2018 and Gigaword data) other choices include (OpenSubtitles 2018 ar, es, fr, ja, and tr):
+
+    python -u train.py bgt/fr-os-giga/data-joint-bin -a bgt-emnlp --bgt-setting trans --optimizer adam --lr 0.0005 -s en -t fr --label-smoothing 0.1 \
+    --dropout 0.3 --max-tokens 1000 --min-lr '1e-09' --lr-scheduler inverse_sqrt --weight-decay 0.0001 \
+    --criterion bilingual_label_smoothed_cross_entropy --max-epoch 20 --warmup-updates 4000 --warmup-init-lr '1e-07' \
+    --adam-betas '(0.9, 0.98)' --save-dir checkpoints/trans --distributed-world-size 1 --latent-size 1024 --update-freq 50 \
+    --task bgt --save-interval-updates 0 --sentencepiece bgt/fr-os-giga/fr-en.1m.sp.20k.model --sentence-avg \
+    --num-workers 0 --find-unused-parameters
 
 To evaluate a model on the STS tasks:
 
-    python -u evaluate.py bgt/fr-os-giga/data-joint-bin -s en -t fr --path checkpoints/bgt/checkpoint_best.pt 
+    python -u evaluate.py bgt/fr-os-giga/data-joint-bin -s en -t fr --path bgt/checkpoints/bgt/checkpoint_best.pt \
     --sentencepiece bgt/fr-os-giga/fr-en.1m.sp.20k.model
 
 To score a list of sentence pairs in tab-separated (tsv) format:
 
-    python -u evaluate_list.py bgt/fr-os-giga/data-joint-bin -s en -t fr --path checkpoints/bgt/checkpoint_best.pt  
+    python -u evaluate_list.py bgt/fr-os-giga/data-joint-bin -s en -t fr --path bgt/checkpoints/bgt/checkpoint_best.pt \
     --sentencepiece bgt/fr-os-giga/fr-en.1m.sp.20k.model --sim-file bgt/sentences.txt
 
 To generate outputs following our "style-transfer" setting:
 
-    python -u style_transfer.py bgt/fr-os-giga/data-joint-bin -s en -t fr --path checkpoints/bgt/checkpoint_best.pt 
+    python -u style_transfer.py bgt/fr-os-giga/data-joint-bin -s en -t fr --path bgt/checkpoints/bgt/checkpoint_best.pt \
     --sentencepiece bgt/fr-os-giga/fr-en.1m.sp.20k.model --task bgt --remove-bpe sentencepiece --style-transfer-file bgt/style_transfer.txt
