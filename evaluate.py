@@ -1,10 +1,10 @@
 import sentencepiece as spm
-from sacremoses import MosesTokenizer
 import os
 import io
 import numpy as np
 import logging
 
+from sacremoses import MosesTokenizer
 from scipy.stats import spearmanr, pearsonr
 
 #python -u evaluate.py training/fr/data-joint-bin/ -s en -t fr --path checkpoints/bgt5-fr-65536-25-0-sample-0.5-1.0/checkpoint20.pt  --sentencepiece training/fr/fr-en.1m.tok.all.sp.20k.model --cpu --model-overrides "{'cpu': 1}"

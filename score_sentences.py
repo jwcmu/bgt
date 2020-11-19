@@ -1,9 +1,10 @@
 import sys
+import sentencepiece as spm
+import numpy as np
+
 from embed import Embedder
 from fairseq import options
 from sacremoses import MosesTokenizer
-import sentencepiece as spm
-import numpy as np
 
 def cosine(u, v):
     return np.dot(u, v) / (np.linalg.norm(u) * np.linalg.norm(v))

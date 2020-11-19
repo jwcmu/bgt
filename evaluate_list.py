@@ -1,8 +1,6 @@
 import sentencepiece as spm
-from sacremoses import MosesTokenizer
 import numpy as np
-
-#python -u evaluate_list.py training/fr/data-joint-bin/ -s en -t fr --path checkpoints/bgt5-fr-65536-25-0-sample-0.5-1.0/checkpoint20.pt  --sentencepiece training/fr/fr-en.1m.tok.all.sp.20k.model --cpu --model-overrides "{'cpu': 1}" --sim-file /projects/tir5/users/jwieting/data/analysis/sentences.txt
+from sacremoses import MosesTokenizer
 
 def cosine(u, v):
     return np.dot(u, v) / (np.linalg.norm(u) * np.linalg.norm(v))

@@ -78,16 +78,12 @@ class BGTLossCriterion(FairseqCriterion):
         en_target = sample['en_target'].view(-1, 1)
         fr_target = sample['fr_target'].view(-1, 1)
 
-        #compute loss on lv en
         _, nll_loss_lv_en = self.compute_loss(model, [net_output['en_lv_logits']], fr_target, reduce=True)
-        #compute loss on lv fr
         _, nll_loss_lv_fr = self.compute_loss(model, [net_output['fr_lv_logits']], en_target, reduce=True)
 
-        #compute KL term
         KL_loss = -0.5 * torch.sum(
                 1 + net_output['logv'] - net_output['mean'].pow(2) - net_output['logv'].exp())
 
-        #compute loss
         KL_weight = self.kl_anneal_function(model.num_updates, self.x0)
 
         recon_loss = self.reconstruction_loss * (nll_loss_lv_en + nll_loss_lv_fr)

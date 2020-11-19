@@ -7,8 +7,6 @@
 Translate raw text with a trained model. Batches data on-the-fly.
 """
 
-from collections import namedtuple
-from sacremoses import MosesTokenizer
 import sentencepiece as spm
 import fileinput
 
@@ -17,6 +15,8 @@ import torch
 from fairseq import checkpoint_utils, options, tasks, utils
 from fairseq.data import encoders
 
+from collections import namedtuple
+from sacremoses import MosesTokenizer
 
 Batch = namedtuple('Batch', 'ids src_tokens src_lengths lang_src_tokens lang_src_lengths')
 Translation = namedtuple('Translation', 'src_str hypos pos_scores alignments')
