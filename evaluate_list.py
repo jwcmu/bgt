@@ -40,7 +40,7 @@ class FileSim(object):
 def batcher(params, batch):
     batch = [" ".join(s) for s in batch]
     new_batch = []
-    for i in batch:
+    for p in batch:
         if params.tokenize:
             tok = params.entok.tokenize(p, escape=False)
             p = " ".join(tok)
