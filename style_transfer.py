@@ -221,9 +221,10 @@ def cli_main():
     style = []
 
     def process_line(l):
+        if args.tokenize:
+            tok = entok.tokenize(l, escape=False)
+            l = " ".join(tok)
         l = l.strip().lower()
-        l = entok.tokenize(l, escape=False)
-        l = " ".join(l).lower()
         l = sp.EncodeAsPieces(l)
         return " ".join(l)
 

@@ -65,4 +65,5 @@ To score a list of sentence pairs in tab-separated (tsv) format:
 To generate outputs following our "style-transfer" setting:
 
     python -u style_transfer.py bgt/fr-os-giga/data-joint-bin -s en -t fr --path bgt/checkpoints/bgt/checkpoint_best.pt \
-    --sentencepiece bgt/fr-os-giga/fr-en.1m.sp.20k.model --task bgt --remove-bpe sentencepiece --style-transfer-file bgt/style_transfer.txt
+    --sentencepiece bgt/fr-os-giga/fr-en.1m.sp.20k.model --tokenize 1 --task bgt --remove-bpe sentencepiece \
+    --style-transfer-file bgt/style_transfer.txt
