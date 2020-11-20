@@ -61,7 +61,7 @@ def evaluate(embedder, args):
     from argparse import Namespace
 
     new_args = Namespace(batch_size=32, entok=entok, sp=sp, embedder=embedder,
-                     encoder=args.eval_encoder)
+                     encoder=args.eval_encoder, tokenize=args.tokenize)
 
     s = FileSim()
     scores = s.score(new_args, batcher, args.sim_file)
