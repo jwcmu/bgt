@@ -41,8 +41,10 @@ def batcher(params, batch):
     batch = [" ".join(s) for s in batch]
     new_batch = []
     for i in batch:
-        tok = params.entok.tokenize(i, escape=False)
-        p = " ".join(tok).lower()
+        if params.tokenize:
+            tok = params.entok.tokenize(p, escape=False)
+            p = " ".join(tok)
+        p = p.lower()
         p = params.sp.EncodeAsPieces(p)
         p = " ".join(p)
         new_batch.append(p)
