@@ -434,7 +434,7 @@ class Trainer(object):
             if self.model.num_updates is None:
                 self.model.num_updates = 0
 
-            self.model.num_updates += nsentences
+            self.model.num_updates += 1#nsentences
 
         except OverflowError as e:
             print('| WARNING: overflow detected, ' + str(e))

@@ -201,17 +201,22 @@ class BGTModel(BaseFairseqModel):
                 tgt_dict, args.decoder_embed_dim, args.decoder_embed_path
             )
 
+        def get_encoder_embed_tokens():
+            return build_embedding(
+                src_dict, args.encoder_embed_dim, args.encoder_embed_path
+            )
+
         assert len(src_dict.symbols) == len(tgt_dict.symbols)
         encoder_sem = cls.build_encoder(args, src_dict, encoder_embed_tokens)
-        encoder_en = cls.build_encoder(args, src_dict, encoder_embed_tokens)
-        encoder_fr = cls.build_encoder(args, tgt_dict, encoder_embed_tokens)
-        decoder_trans_fr = cls.build_decoder(args, tgt_dict, get_decoder_embed_tokens(), do_trans=True)
+        encoder_en = cls.build_encoder(args, src_dict, get_encoder_embed_tokens())
+        encoder_fr = cls.build_encoder(args, tgt_dict, get_encoder_embed_tokens())
+        decoder_trans_fr = cls.build_decoder(args, tgt_dict, decoder_embed_tokens, do_trans=True)
         decoder_trans_en = cls.build_decoder(args, src_dict, get_decoder_embed_tokens(), do_trans=True)
         decoder_fr = None
         decoder_en = None
 
         if args.bgt_setting == "bgt":
-            decoder_fr = cls.build_decoder(args, tgt_dict, decoder_embed_tokens, do_trans=False)
+            decoder_fr = cls.build_decoder(args, tgt_dict, get_decoder_embed_tokens(), do_trans=False)
             decoder_en = cls.build_decoder(args, src_dict, get_decoder_embed_tokens(), do_trans=False)
 
         return BGTModel(args, encoder_sem=encoder_sem, encoder_en=encoder_en, encoder_fr=encoder_fr,
@@ -295,7 +300,7 @@ class BGTModel(BaseFairseqModel):
         trans_decoder_out = self.decoder_trans_fr(fr_prev_output_tokens, {'sent_emb': sent_emb,
                                                                                       'encoder_out': None,
                                                                                       'encoder_padding_mask': None})
-        en_trans_logits = trans_decoder_out[0]  # use english target
+        en_trans_logits = trans_decoder_out[0]  # use fremch target
         decoder_out['en_trans_logits'] = en_trans_logits
 
         return decoder_out
